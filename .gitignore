@@ -69,4 +69,7 @@ venv.bak/
 *.xlsx
 *.parquet
 *.json
+*.sqlite3
+*.db
+!dev_database.db
 !example_data/*.csv

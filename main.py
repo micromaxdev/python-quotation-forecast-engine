@@ -15,6 +15,7 @@ import pandas as pd
 import data_prep
 import pipeline_forecast
 import backlog_forecast
+import database
 
 
 def parse_arguments() -> Tuple[str, str]:
@@ -70,11 +71,12 @@ def main() -> None:
     # input_path, output_path = parse_arguments()
 
     # =========================================================================
-    # STEP 2: INGEST & PREPARE RAW DATA
+    # STEP 2: INGEST & PREPARE RAW DATA (FROM CSV OR SQLITE DATABASE)
     # =========================================================================
-    # - Call data_prep module to load raw quotation data
+    # - Call database module to load quotes/backlog (or data_prep to load CSV)
     # - Clean column headers and missing values
     # - Map quote value bands and fiscal quarters
+    # raw_quotes = database.load_quotes_from_db("dev_database.db")
     # raw_df = data_prep.prepare_dataset("data/raw_quotes.csv")
 
     # =========================================================================
@@ -103,8 +105,10 @@ def main() -> None:
     # =========================================================================
     # STEP 6: EXPORT & REPORT FORECAST RESULTS
     # =========================================================================
+    # - Save results to SQLite database (database.save_forecast_to_db)
     # - Export final dataset to CSV/Excel summary report
     # - Log execution completion and top-level KPIs
+    # database.save_forecast_to_db(master_forecast, db_path="dev_database.db")
     # export_results(master_forecast, "forecast_report.csv")
 
     print("Sales Forecasting Engine execution flow defined successfully.")

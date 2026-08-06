@@ -10,9 +10,11 @@ This repository strictly uses a **flat directory layout** (no subfolders for app
 
 ```text
 python-quotation-forecast-engine/
-├── .gitignore            # Git exclusion rules for Python artifacts, caches, and raw data
+├── .gitignore            # Git exclusion rules (tracks dev_database.db, ignores secret/prod DBs)
 ├── README.md             # Project overview, architecture guide, and developer instructions
 ├── requirements.txt      # Project dependencies (pandas, scikit-learn, pytest, etc.)
+├── dev_database.db       # Shared local SQLite database containing non-production mock tables
+├── database.py           # SQLite connection, schema creation, and database I/O helper functions
 ├── main.py               # Central orchestrator driving step-by-step workflow execution
 ├── data_prep.py          # Data ingestion, cleaning, and feature mapping functions
 ├── pipeline_forecast.py  # Logistic regression probability model & expected won value calculations
@@ -21,11 +23,38 @@ python-quotation-forecast-engine/
 
 ---
 
+## 🗄️ Database Solution (SQLite)
+
+For local development and junior developer ease-of-use, **SQLite** is selected as the lightweight database layer for this project:
+
+- **Zero Configuration:** Built into the Python standard library (`sqlite3`) — no server, credentials, or installation required.
+- **Portability:** The database file `dev_database.db` is tracked in the repository and populated with **non-production sample data** so all developers have immediate access to test data upon cloning.
+- **Data Persistence:** Calculated forecast outputs can be saved directly back to SQLite tables (`forecast_results`) using `pandas` and `sqlite3`.
+
+### Database Schema Overview (`dev_database.db`)
+
+| Table Name | Description | Key Columns |
+| :--- | :--- | :--- |
+| `quotes` | Open sales opportunities | `quote_id`, `customer`, `quote_value`, `status`, `close_date`, `quote_band` |
+| `backlog` | Closed/Won committed orders | `order_id`, `customer`, `order_value`, `order_date`, `lead_time_days` |
+| `forecast_results` | Consolidated model outputs | `id`, `entity_id`, `forecast_type`, `expected_value`, `expected_date` |
+
+---
+
 ## 🛠️ Junior Developer Onboarding & Implementation Guide
 
 All codebase skeleton files contain type annotations, docstrings, and `# TODO` comments outlining exact functionality requirements. As a developer assigned to fill in these modules, follow this sequence:
 
-### Step 1: Implement `data_prep.py`
+### Step 1: Implement `database.py`
+- **Goal:** Manage SQLite connection, dataset queries, and saving forecast outputs to the database.
+- **Tasks:**
+  1. Complete `get_connection()` to open a connection to `dev_database.db`.
+  2. Complete `initialize_database()` to execute `CREATE TABLE IF NOT EXISTS` queries for `quotes`, `backlog`, and `forecast_results`.
+  3. Implement `load_quotes_from_db()` using `pd.read_sql_query()`.
+  4. Implement `load_backlog_from_db()` using `pd.read_sql_query()`.
+  5. Complete `save_forecast_to_db()` using `df.to_sql(table_name, con, if_exists='append')`.
+
+### Step 2: Implement `data_prep.py`
 - **Goal:** Ingest raw CSV/Excel files and convert messy business inputs into clean DataFrames.
 - **Tasks:**
   1. Complete `load_raw_data()` to handle different input file extensions.
@@ -35,7 +64,7 @@ All codebase skeleton files contain type annotations, docstrings, and `# TODO` c
   5. Complete `map_fiscal_quarters()` using `pd.to_datetime()` to assign fiscal quarter tags (e.g., Q1-2026).
   6. Wire up `prepare_dataset()` to run all prep functions sequentially.
 
-### Step 2: Implement `pipeline_forecast.py`
+### Step 3: Implement `pipeline_forecast.py`
 - **Goal:** Calculate win probability and expected won monetary value for active, open sales quotes.
 - **Tasks:**
   1. Complete `load_model_coefficients()` to retrieve weights for features (e.g., quote band, age, customer tier).
@@ -45,7 +74,7 @@ All codebase skeleton files contain type annotations, docstrings, and `# TODO` c
      $$\text{Expected Won Value} = \text{Quote Value} \times \text{Win Probability}$$
   4. Wire up `run_pipeline_forecast()` to return the enriched open pipeline dataset.
 
-### Step 3: Implement `backlog_forecast.py`
+### Step 4: Implement `backlog_forecast.py`
 - **Goal:** Calculate delivery and invoice timelines for closed/won committed orders using datetime arithmetic.
 - **Tasks:**
   1. Complete `get_lead_time_rules()` to map product categories to standard lead time days.
@@ -55,13 +84,14 @@ All codebase skeleton files contain type annotations, docstrings, and `# TODO` c
      $$\text{Expected Invoice Date} = \text{Expected Delivery Date} + \text{Payment Terms (Days)}$$
   4. Wire up `run_backlog_forecast()` to output scheduled revenue timelines.
 
-### Step 4: Implement `main.py`
+### Step 5: Implement `main.py`
 - **Goal:** Connect all modules into an executable command-line program.
 - **Tasks:**
   1. Implement `parse_arguments()` to accept custom input/output file flags via command line.
-  2. Implement `combine_forecasts()` to merge pipeline and backlog outputs into a single master summary table.
-  3. Implement `export_results()` to write outputs to CSV/Excel and output executive KPIs to console.
-  4. Uncomment and verify the main workflow execution chain inside `main()`.
+  2. Connect `database.py` calls to load dataset tables from `dev_database.db`.
+  3. Implement `combine_forecasts()` to merge pipeline and backlog outputs into a single master summary table.
+  4. Implement `export_results()` to write outputs to CSV/Excel and call `database.save_forecast_to_db()`.
+  5. Uncomment and verify the main workflow execution chain inside `main()`.
 
 ---
 
@@ -98,7 +128,7 @@ python main.py
 ---
 
 ## 🧪 Testing Guidelines
-- Write unit tests in separate test files named `test_data_prep.py`, `test_pipeline_forecast.py`, and `test_backlog_forecast.py` as you complete each module.
+- Write unit tests in separate test files named `test_data_prep.py`, `test_pipeline_forecast.py`, `test_database.py`, etc., as you complete each module.
 - Run tests using pytest:
   ```bash
   pytest

@@ -17,8 +17,20 @@ import pipeline_forecast
 import backlog_forecast
 import database
 
-
+import argparse
 def parse_arguments() -> Tuple[str, str]:
+    parser = argparse.ArgumentParser(description="Sales Forecasting Engine")
+    parser.add_argument(
+        "--input",
+         type=str, required=True, help= "D:\Intern\Quotation mock (version 1).xlsx"
+    )
+    parser.add_argument(
+        "--output",
+        type=str, required=True, help="D:\Intern\Sale Forecasting Engine.xlsx"
+    )
+    args = parser.parse_args()
+    return args.input, args.output
+
     """
     Parse command-line arguments for input dataset path and output destination path.
 
@@ -112,6 +124,7 @@ def main() -> None:
     # export_results(master_forecast, "forecast_report.csv")
 
     print("Sales Forecasting Engine execution flow defined successfully.")
+
 
 
 if __name__ == "__main__":

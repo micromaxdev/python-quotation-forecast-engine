@@ -33,7 +33,7 @@ Each function is **pure**:
 ## 🛠️ Step-by-Step Curriculum & Testing Guide
 
 ### Step 1: Clean & Standardize Column Headers
-- **File:** [data_prep.py](file:///c:/Users/shaki/Documents/GitHub/python-quotation-forecast-engine/data_prep.py)
+- **File:** [data_prep.py](./data_prep.py)
 - **Function:** `standardize_column_names(df)`
 - **Goal:** Convert column names to lowercase, strip spaces, and replace inner spaces with underscores `_`.
 - **Test Command:**
@@ -44,7 +44,7 @@ Each function is **pure**:
 ---
 
 ### Step 2: Clean Missing Data Points
-- **File:** [data_prep.py](file:///c:/Users/shaki/Documents/GitHub/python-quotation-forecast-engine/data_prep.py)
+- **File:** [data_prep.py](./data_prep.py)
 - **Function:** `handle_missing_values(df)`
 - **Goal:** Drop any row where `quote_value` or `close_date` is missing, and default missing `customer_tier` to `"Tier 3"`.
 - **Test Command:**
@@ -55,7 +55,7 @@ Each function is **pure**:
 ---
 
 ### Step 3: Categorize Quotation Deal Sizes
-- **File:** [data_prep.py](file:///c:/Users/shaki/Documents/GitHub/python-quotation-forecast-engine/data_prep.py)
+- **File:** [data_prep.py](./data_prep.py)
 - **Function:** `map_quote_bands(df)`
 - **Goal:** Add a `quote_band` column:
   - `< 10,000` $\rightarrow$ `"Small"`
@@ -69,7 +69,7 @@ Each function is **pure**:
 ---
 
 ### Step 4: Map Dates to Fiscal Quarters
-- **File:** [data_prep.py](file:///c:/Users/shaki/Documents/GitHub/python-quotation-forecast-engine/data_prep.py)
+- **File:** [data_prep.py](./data_prep.py)
 - **Function:** `map_fiscal_quarters(df)`
 - **Goal:** Convert `close_date` strings to datetime objects and create a `fiscal_quarter` column (e.g. `"Q3-2026"`).
 - **Test Command:**
@@ -80,7 +80,7 @@ Each function is **pure**:
 ---
 
 ### Step 5: Win Probability (Logistic Regression)
-- **File:** [pipeline_forecast.py](file:///c:/Users/shaki/Documents/GitHub/python-quotation-forecast-engine/pipeline_forecast.py)
+- **File:** [pipeline_forecast.py](./pipeline_forecast.py)
 - **Function:** `calculate_win_probability(df, coefficients)`
 - **Math Formula:**
   $$z = \beta_{\text{intercept}} + \beta_{\text{tier}} + (\text{deal\_age\_days} \times \beta_{\text{age\_penalty}})$$
@@ -93,7 +93,7 @@ Each function is **pure**:
 ---
 
 ### Step 6: Expected Won Value
-- **File:** [pipeline_forecast.py](file:///c:/Users/shaki/Documents/GitHub/python-quotation-forecast-engine/pipeline_forecast.py)
+- **File:** [pipeline_forecast.py](./pipeline_forecast.py)
 - **Function:** `calculate_expected_won_value(df)`
 - **Math Formula:**
   $$\text{Expected Won Value} = \text{Quote Value} \times \text{Win Probability}$$
@@ -105,7 +105,7 @@ Each function is **pure**:
 ---
 
 ### Step 7: Expected Delivery Date Arithmetic
-- **File:** [backlog_forecast.py](file:///c:/Users/shaki/Documents/GitHub/python-quotation-forecast-engine/backlog_forecast.py)
+- **File:** [backlog_forecast.py](./backlog_forecast.py)
 - **Function:** `calculate_expected_delivery_date(df)`
 - **Math Formula:**
   $$\text{Expected Delivery Date} = \text{Order Date} + \text{Lead Time Days}$$
@@ -117,7 +117,7 @@ Each function is **pure**:
 ---
 
 ### Step 8: Expected Invoicing / Payment Offset
-- **File:** [backlog_forecast.py](file:///c:/Users/shaki/Documents/GitHub/python-quotation-forecast-engine/backlog_forecast.py)
+- **File:** [backlog_forecast.py](./backlog_forecast.py)
 - **Function:** `calculate_expected_invoice_date(df)`
 - **Math Formula:**
   $$\text{Expected Invoice Date} = \text{Expected Delivery Date} + \text{Net 30 Payment Offset}$$

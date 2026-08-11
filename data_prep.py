@@ -3,137 +3,160 @@ data_prep.py
 ------------
 Module for data ingestion, cleaning, normalization, and feature mapping for the Sales Forecasting Engine.
 
-All functions in this module must accept and return pandas DataFrames without introducing side effects.
+INTERN WORKSPACE:
+Each function in this module is a PURE FUNCTION:
+  - Input: a pandas DataFrame (plus optional helper arguments)
+  - Output: a NEW modified pandas DataFrame (return df.copy() modifications)
+  - Rules: Do NOT edit database connections or file loading here! Just transform the DataFrame.
 """
 
-from typing import Any, Dict, List, Optional
 import pandas as pd
 
 
+# =============================================================================
+# BOILERPLATE (PRE-BUILT FOR INTERN)
+# =============================================================================
+
 def load_raw_data(file_path: str) -> pd.DataFrame:
-    if file_path.lower().endswith("csv"):
-        DataFrame = pd.read_csv(file_path)
-    elif file_path.lower().endswith((".xlsx",".xls")):
-        DataFrame = pd.read_excel(file_path)
+    """Load raw quotation or order backlog data from a CSV or Excel file."""
+    if file_path.lower().endswith(".csv"):
+        return pd.read_csv(file_path)
+    elif file_path.lower().endswith((".xlsx", ".xls")):
+        return pd.read_excel(file_path)
     else:
-        raise ValueError(f"Unsupported file type:{file_path}")
-    return DataFrame
-file_path = r"D:\Intern\Quotation mock (version 1).xlsx"
-DataFrame = load_raw_data(file_path)
-"""
-    Load raw quotation and order backlog data from a CSV or Excel file.
+        raise ValueError(f"Unsupported file format: {file_path}")
 
-    Args:
-        file_path (str): Path to the input file (CSV or XLSX).
 
-    Returns:
-        pd.DataFrame: Raw uncleaned DataFrame.
-    """
-    # TODO (Junior Dev): Implement file loading logic (handling CSV/Excel formats)
-pass
-
+# =============================================================================
+# STEP 1: COLUMN STANDARDIZATION (INTERN STEP 1)
+# =============================================================================
 
 def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
-    DataFrame = df.copy()
-    DataFrame.columns = DataFrame.columns.str.strip().str.lower().str.replace(' ', '_').str.replace(r'[^\w\s]', '', regex=True)
-    return DataFrame
-
     """
-    Standardize DataFrame column headers (strip whitespace, lowercase, snake_case).
+    Step 1: Clean and standardize DataFrame column headers.
 
-    Args:
-        df (pd.DataFrame): Input raw DataFrame.
+    Goal:
+      - Convert column names to lowercase
+      - Strip leading and trailing whitespace
+      - Replace spaces with underscores '_'
 
-    Returns:
-        pd.DataFrame: DataFrame with sanitized column names.
+    Example Input Columns:  [' Quote ID ', 'Quote Value', 'CLOSE DATE']
+    Example Output Columns: ['quote_id', 'quote_value', 'close_date']
+    
+    Test with: `python workbench.py 1`
     """
-    # TODO (Junior Dev): Strip whitespace, replace spaces/special chars with underscores, lower-case
-    pass
+    df = df.copy()
+    
+    # INTERN TODO: Implement column cleaning logic below
+    # Hint: df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
+    df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
+    
+    return df
 
+
+# =============================================================================
+# STEP 2: MISSING VALUE HANDLING (INTERN STEP 2)
+# =============================================================================
 
 def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
-    DataFrame = df.copy()
-    Critical_columns = ['quote_value', 'close_date', 'status']
-    DataFrame = DataFrame.dropna(subset=Critical_columns)
-    return DataFrame
     """
-    Fill or filter out missing fields in critical columns (e.g., quote_value, close_date, status).
+    Step 2: Filter out or impute rows with missing values in critical columns.
 
-    Args:
-        df (pd.DataFrame): DataFrame with standardized column names.
+    Goal:
+      - Remove any row where 'quote_value' or 'close_date' is missing (NaN)
+      - Fill missing 'customer_tier' values with "Tier 3" default
 
-    Returns:
-        pd.DataFrame: Cleaned DataFrame with handled missing values.
+    Test with: `python workbench.py 2`
     """
-    # TODO (Junior Dev): Impute or drop missing critical data points
-    pass
+    df = df.copy()
 
+    # INTERN TODO: Handle missing values below
+    # Hint 1: df = df.dropna(subset=['quote_value', 'close_date'])
+    # Hint 2: df['customer_tier'] = df['customer_tier'].fillna('Tier 3')
+    if 'quote_value' in df.columns:
+        df = df.dropna(subset=['quote_value'])
+    if 'close_date' in df.columns:
+        df = df.dropna(subset=['close_date'])
+    if 'customer_tier' in df.columns:
+        df['customer_tier'] = df['customer_tier'].fillna('Tier 3')
+
+    return df
+
+
+# =============================================================================
+# STEP 3: QUOTE VALUE BAND MAPPING (INTERN STEP 3)
+# =============================================================================
 
 def map_quote_bands(df: pd.DataFrame, value_column: str = "quote_value") -> pd.DataFrame:
-    DataFrame = df.copy()
-    def classify_quote(value):
-        if value <10000:
-            return 'Small' 
-        elif value <50000:
-            return 'Medium'
+    """
+    Step 3: Categorize sales quotes into value size bands.
+
+    Goal:
+      Add a new column named 'quote_band' based on 'quote_value':
+        - 'Small'  : quote_value < 10,000
+        - 'Medium' : 10,000 <= quote_value < 50,000
+        - 'Large'  : quote_value >= 50,000
+
+    Test with: `python workbench.py 3`
+    """
+    df = df.copy()
+
+    # INTERN TODO: Categorize quote sizes below
+    # Hint: You can use pd.cut() or a custom helper function with df[value_column].apply(...)
+    def classify(val):
+        if val < 10000:
+            return "Small"
+        elif val < 50000:
+            return "Medium"
         else:
-            return 'Large'
-    DataFrame['quote_band'] = DataFrame[value_column].apply(classify_quote)
-    return DataFrame
-    """
-    Categorize sales quotes into value bands (e.g., Small <$10k, Medium $10k-$50k, Large >$50k).
+            return "Large"
 
-    Args:
-        df (pd.DataFrame): Input DataFrame.
-        value_column (str): Name of column containing numerical quote amounts.
+    if value_column in df.columns:
+        df["quote_band"] = df[value_column].apply(classify)
+    else:
+        df["quote_band"] = "Unknown"
 
-    Returns:
-        pd.DataFrame: DataFrame with an added 'quote_band' categorical column.
-    """
-    # TODO (Junior Dev): Implement binning logic using pd.cut or custom thresholds
-    pass
+    return df
 
+
+# =============================================================================
+# STEP 4: FISCAL QUARTER MAPPING (INTERN STEP 4)
+# =============================================================================
 
 def map_fiscal_quarters(df: pd.DataFrame, date_column: str = "close_date") -> pd.DataFrame:
-    DataFrame = df.copy()
-    DataFrame[date_column] = pd.to_datetime(DataFrame[date_column], errors='coerce')
-    Shifted_month = (DataFrame[date_column].dt.month - 7) % 12 + 1
-    DataFrame['fiscal_quarter'] = "Q" + ((Shifted_month - 1) // 3 + 1).astype(str)
-    DataFrame['fiscal_year'] = DataFrame[date_column].dt.year + (Shifted_month >= 7).astype(int)
-    return DataFrame
     """
-    Map date fields to fiscal year quarters (e.g., Q1-2026, Q2-2026).
+    Step 4: Map date strings to Fiscal Quarter tags (e.g. "Q1-2026", "Q3-2026").
 
-    Args:
-        df (pd.DataFrame): Input DataFrame.
-        date_column (str): Column name containing datetime objects or strings.
+    Goal:
+      - Convert date_column to pandas datetime: pd.to_datetime(df[date_column])
+      - Extract year and quarter (e.g. Quarter 1 -> "Q1", Year 2026 -> "2026")
+      - Add a new column named 'fiscal_quarter' with format "Q{quarter}-{year}"
 
-    Returns:
-        pd.DataFrame: DataFrame with added 'fiscal_quarter' and 'fiscal_year' columns.
+    Test with: `python workbench.py 4`
     """
-    # TODO (Junior Dev): Parse datetime and extract fiscal year/quarter mappings
-    pass
+    df = df.copy()
+
+    # INTERN TODO: Parse datetime and add 'fiscal_quarter' column below
+    # Hint:
+    # dates = pd.to_datetime(df[date_column])
+    # df['fiscal_quarter'] = "Q" + dates.dt.quarter.astype(str) + "-" + dates.dt.year.astype(str)
+    if date_column in df.columns:
+        dates = pd.to_datetime(df[date_column], errors="coerce")
+        df["fiscal_quarter"] = "Q" + dates.dt.quarter.astype(str) + "-" + dates.dt.year.astype(str)
+    else:
+        df["fiscal_quarter"] = "N/A"
+
+    return df
 
 
-def prepare_dataset(file_path: str) -> pd.DataFrame:
-    """
-    Master data prep pipeline function linking loading, cleaning, and feature mapping.
+# =============================================================================
+# FULL DATA PREP PIPELINE (PRE-BUILT FOR INTERN)
+# =============================================================================
 
-    Args:
-        file_path (str): Path to the raw sales data file.
-
-    Returns:
-        pd.DataFrame: Fully prepared and enriched dataset ready for model consumption.
-    """
-    # Step 1: Load raw data
-    df = load_raw_data(file_path)
-    # Step 2: Standardize column names
+def prepare_dataset(df: pd.DataFrame) -> pd.DataFrame:
+    """Master orchestrator executing data prep Steps 1 -> 4 sequentially."""
     df = standardize_column_names(df)
-    # Step 3: Handle missing values
     df = handle_missing_values(df)
-    # Step 4: Map quote bands
     df = map_quote_bands(df)
-    # Step 5: Map fiscal quarters
     df = map_fiscal_quarters(df)
-    # Return processed DataFrame
     return df

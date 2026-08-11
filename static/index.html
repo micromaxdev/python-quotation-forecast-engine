@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Inspector - Sales Forecast Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-icon">📊</div>
+                <div>
+                    <h2>Forecast Engine</h2>
+                    <span class="badge">Live DB Inspector</span>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="section-title">
+                    <span>DATABASE TABLES</span>
+                    <button id="refresh-btn" title="Refresh Tables">🔄</button>
+                </div>
+                <ul id="tables-list" class="tables-list">
+                    <li class="loading">Loading tables...</li>
+                </ul>
+            </div>
+
+            <div class="nav-section guide-box">
+                <h4>💡 Workbench Help</h4>
+                <p>Run steps in your terminal to see real-time table updates:</p>
+                <code>python workbench.py 1</code>
+                <code>python workbench.py run-all</code>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <div>
+                    <h1 id="active-table-title">Select a Table</h1>
+                    <p id="table-subtitle" class="subtitle">Click any database table on the left to inspect rows and columns.</p>
+                </div>
+                <div class="actions">
+                    <span id="row-count-badge" class="count-chip hidden">0 rows</span>
+                    <button id="auto-refresh-toggle" class="btn btn-secondary">Auto Refresh: ON</button>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <div id="table-container" class="table-container">
+                    <div class="empty-state">
+                        <div class="icon">🔍</div>
+                        <h3>No Table Selected</h3>
+                        <p>Choose a table from the sidebar to inspect its raw values and calculated metrics.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

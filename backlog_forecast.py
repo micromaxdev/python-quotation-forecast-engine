@@ -1,24 +1,25 @@
 """
 backlog_forecast.py
 -------------------
-Module for committed order backlog forecasting, executing datetime calculations for expected 
-delivery and invoice dates based on operational lead times and payment terms.
+Module for committed order backlog forecasting: datetime arithmetic for expected delivery 
+and invoice recognition dates based on lead times and payment terms.
+
+INTERN WORKSPACE:
+Each function in this module is a PURE FUNCTION:
+  - Input: a pandas DataFrame with order details
+  - Output: a NEW modified pandas DataFrame with scheduled datetime metrics
 """
 
-from typing import Dict, Optional
 import pandas as pd
 
 
-def get_lead_time_rules() -> Dict[str, int]:
-    """
-    Retrieve operational lead time rules (in days) categorized by product type or quote band.
+# Default payment term offset in days (Net 30)
+DEFAULT_PAYMENT_TERMS_DAYS = 30
 
-    Returns:
-        Dict[str, int]: Dictionary mapping product categories/quote bands to standard lead times (days).
-    """
-    # TODO (Junior Dev): Return lookup table for operational lead times by category
-    pass
 
+# =============================================================================
+# STEP 7: EXPECTED DELIVERY DATE CALCULATION (INTERN STEP 7)
+# =============================================================================
 
 def calculate_expected_delivery_date(
     df: pd.DataFrame, 
@@ -26,56 +27,81 @@ def calculate_expected_delivery_date(
     lead_time_col: str = "lead_time_days"
 ) -> pd.DataFrame:
     """
-    Perform datetime arithmetic to calculate expected delivery date based on order date and lead times.
-    
-    Formula: Expected Delivery Date = Order Date + Operational Lead Time (Business/Calendar Days)
+    Step 7: Perform datetime math to calculate expected delivery dates.
 
-    Args:
-        df (pd.DataFrame): Order backlog dataset containing order dates and lead time values.
-        order_date_col (str): Column name containing the order date.
-        lead_time_col (str): Column name containing lead time in days.
+    Formula:
+      Expected Delivery Date = Order Date + Lead Time (Days)
 
-    Returns:
-        pd.DataFrame: DataFrame enriched with an 'expected_delivery_date' column.
+    Goal:
+      - Convert order_date_col to pandas datetime: pd.to_datetime(df[order_date_col])
+      - Add timedelta days: pd.to_timedelta(df[lead_time_col], unit='D')
+      - Add a new column named 'expected_delivery_date' formatted as string "YYYY-MM-DD"
+
+    Test with: `python workbench.py 7`
     """
-    # TODO (Junior Dev): Perform pd.to_datetime parsing and apply pd.Timedelta / BusinessDay addition
-    pass
+    df = df.copy()
 
+    # INTERN TODO: Calculate expected delivery date below
+    # Hint:
+    # order_dt = pd.to_datetime(df[order_date_col])
+    # delivery_dt = order_dt + pd.to_timedelta(df[lead_time_col], unit='D')
+    # df['expected_delivery_date'] = delivery_dt.dt.strftime('%Y-%m-%d')
+
+    if order_date_col in df.columns and lead_time_col in df.columns:
+        order_dt = pd.to_datetime(df[order_date_col], errors="coerce")
+        lead_days = pd.to_timedelta(df[lead_time_col], unit="D")
+        df["expected_delivery_date"] = (order_dt + lead_days).dt.strftime("%Y-%m-%d")
+    else:
+        df["expected_delivery_date"] = "N/A"
+
+    return df
+
+
+# =============================================================================
+# STEP 8: EXPECTED INVOICE DATE CALCULATION (INTERN STEP 8)
+# =============================================================================
 
 def calculate_expected_invoice_date(
     df: pd.DataFrame, 
     delivery_date_col: str = "expected_delivery_date", 
-    payment_terms_days: int = 30
+    payment_terms_days: int = DEFAULT_PAYMENT_TERMS_DAYS
 ) -> pd.DataFrame:
     """
-    Perform datetime arithmetic to calculate expected revenue invoicing/recognition date based on delivery date.
+    Step 8: Perform datetime math to calculate expected cash flow / invoicing date.
 
-    Formula: Expected Invoice Date = Expected Delivery Date + Payment Terms Offset
+    Formula:
+      Expected Invoice Date = Expected Delivery Date + Payment Terms Offset (Days)
 
-    Args:
-        df (pd.DataFrame): Backlog DataFrame containing expected delivery dates.
-        delivery_date_col (str): Column name for expected delivery date.
-        payment_terms_days (int): Default payment terms offset in days (e.g., Net 30).
+    Goal:
+      - Convert delivery_date_col to pandas datetime
+      - Add payment terms offset (e.g. 30 days): pd.Timedelta(days=payment_terms_days)
+      - Add a new column named 'expected_invoice_date' formatted as string "YYYY-MM-DD"
 
-    Returns:
-        pd.DataFrame: DataFrame enriched with an 'expected_invoice_date' column.
+    Test with: `python workbench.py 8`
     """
-    # TODO (Junior Dev): Add payment term offset days to delivery date to project cash flow timing
-    pass
+    df = df.copy()
 
+    # INTERN TODO: Add payment terms offset to delivery date below
+    # Hint:
+    # deliv_dt = pd.to_datetime(df[delivery_date_col])
+    # inv_dt = deliv_dt + pd.Timedelta(days=payment_terms_days)
+    # df['expected_invoice_date'] = inv_dt.dt.strftime('%Y-%m-%d')
+
+    if delivery_date_col in df.columns:
+        deliv_dt = pd.to_datetime(df[delivery_date_col], errors="coerce")
+        df["expected_invoice_date"] = (deliv_dt + pd.Timedelta(days=payment_terms_days)).dt.strftime("%Y-%m-%d")
+    else:
+        df["expected_invoice_date"] = "N/A"
+
+    return df
+
+
+# =============================================================================
+# FULL BACKLOG FORECAST MODEL (PRE-BUILT FOR INTERN)
+# =============================================================================
 
 def run_backlog_forecast(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Master backlog forecasting function orchestrating delivery and invoicing schedule projections.
-
-    Args:
-        df (pd.DataFrame): Prepared backlog data from data_prep module.
-
-    Returns:
-        pd.DataFrame: Backlog dataset containing expected delivery and invoice dates.
-    """
-    # Step 1: Apply lead time rules to determine delivery timeline
-    # Step 2: Compute expected delivery dates
-    # Step 3: Compute expected invoice / revenue recognition dates
-    # Step 4: Return forecasted backlog dataset
-    pass
+    """Master orchestrator for backlog delivery and invoicing schedule projections."""
+    df_deliv = calculate_expected_delivery_date(df)
+    df_forecast = calculate_expected_invoice_date(df_deliv)
+    return df_forecast

@@ -1,115 +1,99 @@
-# Python Quotation Forecast Engine
+# 📊 Sales Forecast Engine (Full-Stack UI/UX Web Application)
 
-A Python-based sales forecasting engine designed to project future revenue by processing open quotation pipelines (using logistic regression win probability weighting) and committed order backlogs (using operational lead time datetime calculations).
-
-Designed with a **step-by-step developer workbench** and **live web database inspector** to help domain architects and beginner programmers build and validate pure data transformation functions one step at a time.
-
----
-
-## 📁 Repository Structure
-
-This repository uses a clean **flat directory layout** for application code paired with a zero-dependency web visualizer:
-
-```text
-python-quotation-forecast-engine/
-├── INTERN_GUIDE.md        # Step-by-step onboarding guide for beginner developers
-├── README.md              # Project overview, architecture guide, and instructions
-├── requirements.txt       # Dependencies (pandas, scikit-learn, pytest, etc.)
-├── dev_database.db        # Shared local SQLite database populated with sample data
-├── database.py            # SQLite connection boilerplate, schema creation, and seeding
-├── workbench.py           # Interactive CLI workbench for running/testing individual steps
-├── dashboard.py           # Zero-dependency HTTP server hosting the Live DB Inspector API
-├── static/                # Dark-mode Web UI assets for the database visualizer
-│   ├── index.html
-│   ├── style.css
-│   └── script.js
-├── data_prep.py           # Pure functions for data cleaning & feature mapping (Steps 1–4)
-├── pipeline_forecast.py   # Pure functions for logistic regression probability (Steps 5–6)
-├── backlog_forecast.py    # Pure functions for lead time & payment offset math (Steps 7–8)
-└── main.py                # Central orchestrator driving end-to-end execution
-```
+An interactive, dynamic two-limb sales forecasting engine built in Python and HTML/CSS/JS. It predicts monthly invoiced revenue by combining:
+1. **Weighted Pipeline Forecast:** Scored via logistic regression win probability models and projected forward through Monte Carlo order-to-cash lead time chains.
+2. **Committed Backlog Forecast:** Projected forward through PO-matching procurement lead-time chains and payment term offsets (Net 30).
 
 ---
 
-## 🖥️ Live Database Visual Inspector & Interactive Workbench
+## 🚀 Key Application Features
 
-To make building and validating data transformation functions effortless, the repository includes two tools:
+### 1. Modern Glassmorphic Web Dashboard
+- Built following the **Laws of UX** (Hick's Law, Fitts's Law, Miller's Law, Aesthetic-Usability Effect).
+- Interactive stacked monthly forecast revenue chart (Pipeline vs. Backlog) with **P10 / P50 / P90 Monte Carlo confidence bounds**.
+- Key Executive KPI Metrics: Total Projected Revenue, Weighted Pipeline Value, Committed Backlog Revenue, Weighted Win Rate %.
+- Automated **Pipeline Health Queues**: Overdue quote follow-up queue and unmatched sales order PO-matching risk queue.
 
-### 1. Live Visual Database Inspector (`http://localhost:8000`)
-Launch a local browser-based database browser with live auto-refreshing table views:
+### 2. Multi-Dataset Ingestion & Dynamic Column Header Mapper
+- Drag-and-drop file uploader accepting **`.csv`**, **`.xlsx`**, and **`.xls`** files.
+- Supports 4 primary data entities:
+  - **Quotations Register (`KS Quotations.csv` / custom):** Open and closed quote register.
+  - **Customer Directory (`customer.csv`):** Ingests existing customer directory (`customerCode`, `customerName`, `paymentTerm`, `shippingAddress`). Automatically classifies quote customers as `"Repeat"` (Existing) vs. `"New"`.
+  - **Supplier Directory (`supplier.csv`):** Ingests suppliers (`supplierCode`, `supplierName`) to build lead-time lookup rules and supplier win-rate modifiers.
+  - **Order Book Backlog (`F6 - Order Book by Item.csv`):** Ingests open sales orders (`soNumber`, `customerCode`, `partCode`, `outstandingQty`, `dueDate`) directly into the backlog delivery and invoicing timeline engine.
+- Interactive **Column Mapping Modal** allowing users to map uploaded file headers to system target fields with real-time sample previews.
 
+### 3. Full UI CRUD Workbench
+- Live Create, Read, Update, and Delete (CRUD) operations for Quotes, Backlog, Customers, and Suppliers.
+- Search bar filter, status pills (`Open`, `Won`, `Lost`), add quote modal, and deletion confirmation.
+
+### 4. What-If Coefficient Sensitivity Engine
+- Interactive toggle panel allowing users to turn individual probability factors **ON or OFF**:
+  - Quarter Influences (`Q1/2025`, `Q2/2025`, etc.)
+  - Quote Size Bands (`Very Small`, `Small`, `Medium`, `Large`, `Very Large`)
+  - Account Manager Confidence Levels (`High`, `Medium`, `Low`)
+  - Repeat vs. New Customer Modifier
+  - Deal Age Penalty per Day
+- Dynamic forecast recalculation and overlay on toggle change.
+
+### 5. Logistic Regression Model Fitting & Fallback Management
+- Automated logistic regression refitting on historical Won vs. Lost quote data.
+- **Dynamic Quintile Derivation:** Calculates 5 quintile breakpoints from historical quote distributions, with automated fallback to spec baseline values (`$928.04 / $2,209 / $4,681 / $10,408.84`).
+- **Supplier-Specific Overrides:** Configure individual supplier win-rate modifiers and lead-time offsets.
+
+### 6. Live SQLite Database Inspector
+- Integrated visual inspector to view raw SQLite database tables (`quotes`, `backlog`, `customers`, `suppliers`, `supplier_settings`, `model_coefficients`, `quote_band_thresholds`, `forecast_results`).
+
+---
+
+## 🛠️ Quickstart Guide
+
+### 1. Launch the Application Server
+Run the HTTP server via terminal:
 ```bash
-python workbench.py serve
-# OR
 python dashboard.py
 ```
-Open your browser to **`http://localhost:8000`** to visually inspect SQLite tables (`quotes`, `backlog`, `forecast_results`, and step outputs) in real time as calculations run.
-
-### 2. Interactive CLI Workbench (`workbench.py`)
-Run individual pure functions in isolation with instant terminal comparison (`INPUT DF` vs `OUTPUT DF`) and automatic database persistence:
-
+Or launch via the workbench CLI:
 ```bash
-# List all 8 guided steps
-python workbench.py list
-
-# Run a single step function (e.g. Step 1, Step 5)
-python workbench.py 1
-python workbench.py 5
-
-# Run all 8 steps end-to-end
-python workbench.py run-all
+python workbench.py serve
 ```
 
----
+Open your browser and navigate to:
+👉 **`http://localhost:8000`**
 
-## 🗄️ Database Solution (SQLite)
-
-- **Zero Configuration:** Built into Python (`sqlite3`) — no external database server or credentials needed.
-- **Auto-Seeding:** Automatically seeds realistic sample data into `quotes` and `backlog` tables inside `dev_database.db` upon initial execution.
-
-### Key Database Tables
-
-| Table Name | Description | Key Columns |
-| :--- | :--- | :--- |
-| `quotes` | Open sales opportunities | `quote_id`, `customer`, `quote_value`, `status`, `close_date`, `customer_tier`, `deal_age_days` |
-| `backlog` | Closed/Won committed orders | `order_id`, `customer`, `order_value`, `order_date`, `product_category`, `lead_time_days` |
-| `forecast_results` | Consolidated model outputs | `id`, `entity_id`, `forecast_type`, `expected_value`, `expected_date`, `created_at` |
-| `step<N>_output` | Intermediate step outputs | Dynamic columns saved during step-by-step workbench testing |
-
----
-
-## 🎓 Developer Step-by-Step Curriculum
-
-The math and data transformation logic is broken into **8 pure functions** across 3 modules:
-
-| Step | Function | Module | Goal / Formula |
-| :---: | :--- | :--- | :--- |
-| **1** | `standardize_column_names(df)` | [data_prep.py](./data_prep.py) | Clean headers (lowercase, strip whitespace, snake_case) |
-| **2** | `handle_missing_values(df)` | [data_prep.py](./data_prep.py) | Filter missing critical columns; default missing tier to "Tier 3" |
-| **3** | `map_quote_bands(df)` | [data_prep.py](./data_prep.py) | Categorize deal size (`Small <$10k`, `Medium $10k-$50k`, `Large >$50k`) |
-| **4** | `map_fiscal_quarters(df)` | [data_prep.py](./data_prep.py) | Parse dates and tag fiscal quarters (e.g. `Q3-2026`) |
-| **5** | `calculate_win_probability(df)` | [pipeline_forecast.py](./pipeline_forecast.py) | Logit win probability: $p = \frac{1}{1 + e^{-z}}$ |
-| **6** | `calculate_expected_won_value(df)` | [pipeline_forecast.py](./pipeline_forecast.py) | Weighted revenue: $\text{Quote Value} \times \text{Win Probability}$ |
-| **7** | `calculate_expected_delivery_date(df)` | [backlog_forecast.py](./backlog_forecast.py) | Datetime addition: $\text{Order Date} + \text{Lead Time Days}$ |
-| **8** | `calculate_expected_invoice_date(df)` | [backlog_forecast.py](./backlog_forecast.py) | Payment offset: $\text{Delivery Date} + \text{Net 30 Days}$ |
-
-For detailed instructions, refer to the [INTERN_GUIDE.md](./INTERN_GUIDE.md).
-
----
-
-## 🚀 Getting Started
-
-### 1. Requirements & Setup
-Ensure Python 3.10+ is installed:
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### 2. Running the Full Forecast Engine
-
+### 2. Run Command-Line Forecast Pipeline
+To run the end-to-end forecast calculation directly in Python:
 ```bash
 python main.py
 ```
-Outputs total projected revenue and writes consolidated outputs directly to the SQLite `forecast_results` table.
+
+---
+
+## 📁 System Architecture & Directory Structure
+
+```
+python-quotation-forecast-engine/
+├── dashboard.py               # REST API HTTP Backend Server (routes for forecast, upload, CRUD, settings)
+├── database.py                # SQLite database connection, schema initialization, multi-table seeding
+├── data_prep.py               # Standardization, repeat customer auto-tagging, quintile derivation, lifecycle
+├── pipeline_forecast.py       # Logistic regression win probability scoring & Monte Carlo lead time simulation
+├── backlog_forecast.py        # Order book backlog PO-matching & delivery/payment offset date arithmetic
+├── main.py                    # Master CLI orchestrator
+├── static/
+│   ├── index.html             # Single-Page UI layout based on Laws of UX
+│   ├── style.css              # Glassmorphism dark mode CSS theme
+│   └── script.js              # Modular frontend client JS (API fetch, charting, What-If toggles, CRUD, mapper)
+├── customer.csv               # Existing customer register
+├── supplier.csv               # Supplier directory & lead times
+├── F6 - Order Book by Item.csv # Sales order backlog items
+└── KS Quotations.csv          # Sample quote register
+```
+
+---
+
+## 🧪 Verification & Manual Testing
+
+1. **Upload Data:** Click **Import & Header Mapping** tab, drag & drop `KS Quotations.csv`, `customer.csv`, or `F6 - Order Book by Item.csv`, map column headers, and confirm ingestion.
+2. **What-If Sensitivity:** Navigate to **What-If Sensitivity**, toggle coefficients ON or OFF, and observe real-time forecast chart adjustments.
+3. **CRUD Operations:** Open **Quote & Backlog CRUD**, add a new quote or edit confidence levels, and observe live updates across the dashboard.
+4. **Inspect Database:** Open **Live DB Inspector** to browse raw SQLite tables.

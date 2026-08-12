@@ -137,8 +137,10 @@ def run_step(step_num: int, save_to_db: bool = True) -> pd.DataFrame:
 
     if save_to_db:
         # Save output to step table in database for visual inspector
-        table_name = f"step{step_num}_output"
-        database.save_step_output_to_db(output_df, f"{step_num}_output")
+        table_name = f"step_{step_num}"
+        conn = database.get_connection()
+        output_df.to_sql(table_name, con=conn, if_exists="replace", index=False)
+        conn.close()
         print(f"\n[SUCCESS] Output saved to SQLite table '{table_name}'.")
         print(f"Web Visualizer: http://localhost:8000")
 
@@ -147,41 +149,8 @@ def run_step(step_num: int, save_to_db: bool = True) -> pd.DataFrame:
 
 def run_all_steps():
     print_banner("EXECUTION ENGINE - RUNNING ALL PIPELINE STEPS")
-    database.initialize_database()
-
-    # Pipeline branch (Quotes)
-    df_quotes = database.load_quotes_from_db()
-    df_prep = data_prep.prepare_dataset(df_quotes)
-    df_pipeline = pipeline_forecast.run_pipeline_forecast(df_prep)
-
-    # Backlog branch (Orders)
-    df_backlog = database.load_backlog_from_db()
-    df_backlog_fc = backlog_forecast.run_backlog_forecast(df_backlog)
-
-    print("\n--- [FINAL PIPELINE FORECAST SUMMARY] ---")
-    print(df_pipeline[["quote_id", "customer", "quote_value", "quote_band", "win_probability", "expected_won_value"]].to_string(index=False))
-
-    print("\n--- [FINAL BACKLOG FORECAST SUMMARY] ---")
-    print(df_backlog_fc[["order_id", "customer", "order_value", "order_date", "expected_delivery_date", "expected_invoice_date"]].to_string(index=False))
-
-    # Save to forecast_results
-    pipeline_records = df_pipeline.rename(columns={
-        "quote_id": "entity_id",
-        "expected_won_value": "expected_value",
-        "close_date": "expected_date"
-    })[["entity_id", "expected_value", "expected_date"]].copy()
-    pipeline_records["forecast_type"] = "Pipeline Quote"
-
-    backlog_records = df_backlog_fc.rename(columns={
-        "order_id": "entity_id",
-        "order_value": "expected_value",
-        "expected_invoice_date": "expected_date"
-    })[["entity_id", "expected_value", "expected_date"]].copy()
-    backlog_records["forecast_type"] = "Committed Backlog"
-
-    consolidated = pd.concat([pipeline_records, backlog_records], ignore_index=True)
-    database.save_forecast_to_db(consolidated, table_name="forecast_results", if_exists="replace")
-
+    import main
+    main.run_full_forecast()
     print("\n[SUCCESS] CONSOLIDATED FORECAST SAVED TO 'forecast_results' TABLE!")
     print("View full visual comparison on dashboard: http://localhost:8000")
 

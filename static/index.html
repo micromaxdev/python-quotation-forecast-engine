@@ -3,65 +3,381 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Database Inspector - Sales Forecast Engine</title>
+    <title>Sales Forecast Engine — Executive Dashboard & Workbench</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar -->
+        <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="brand">
-                <div class="logo-icon">📊</div>
+                <div class="logo-icon">📈</div>
                 <div>
                     <h2>Forecast Engine</h2>
-                    <span class="badge">Live DB Inspector</span>
+                    <span class="badge-v2">Enterprise v2.0</span>
                 </div>
             </div>
 
-            <div class="nav-section">
-                <div class="section-title">
-                    <span>DATABASE TABLES</span>
-                    <button id="refresh-btn" title="Refresh Tables">🔄</button>
-                </div>
-                <ul id="tables-list" class="tables-list">
-                    <li class="loading">Loading tables...</li>
-                </ul>
-            </div>
+            <nav class="nav-menu">
+                <div class="nav-section-title">CORE DASHBOARDS</div>
+                <button class="nav-btn active" data-tab="tab-dashboard">
+                    <span class="icon">📊</span> Executive Dashboard
+                </button>
+                <button class="nav-btn" data-tab="tab-whatif">
+                    <span class="icon">⚡</span> What-If Sensitivity
+                </button>
 
-            <div class="nav-section guide-box">
-                <h4>💡 Workbench Help</h4>
-                <p>Run steps in your terminal to see real-time table updates:</p>
-                <code>python workbench.py 1</code>
-                <code>python workbench.py run-all</code>
+                <div class="nav-section-title">DATA WORKBENCH</div>
+                <button class="nav-btn" data-tab="tab-workbench">
+                    <span class="icon">📝</span> Quote & Backlog CRUD
+                </button>
+                <button class="nav-btn" data-tab="tab-directories">
+                    <span class="icon">👥</span> Customers & Suppliers
+                </button>
+                <button class="nav-btn" data-tab="tab-ingest">
+                    <span class="icon">📥</span> Import & Header Mapping
+                </button>
+
+                <div class="nav-section-title">ADMIN & DIAGNOSTICS</div>
+                <button class="nav-btn" data-tab="tab-settings">
+                    <span class="icon">⚙️</span> Model Settings & Fallbacks
+                </button>
+                <button class="nav-btn" data-tab="tab-inspector">
+                    <span class="icon">🔍</span> Live DB Inspector
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="dot online"></span> Database Connected
+                </div>
+                <small>SQLite • dev_database.db</small>
             </div>
         </aside>
 
-        <!-- Main Content -->
+        <!-- Main Workspace View -->
         <main class="main-content">
+            <!-- Top Header Bar -->
             <header class="top-header">
                 <div>
-                    <h1 id="active-table-title">Select a Table</h1>
-                    <p id="table-subtitle" class="subtitle">Click any database table on the left to inspect rows and columns.</p>
+                    <h1 id="page-title">Executive Sales Forecast</h1>
+                    <p id="page-subtitle" class="subtitle">Two-limb revenue forecast combining weighted open pipeline & committed order backlog.</p>
                 </div>
-                <div class="actions">
-                    <span id="row-count-badge" class="count-chip hidden">0 rows</span>
-                    <button id="auto-refresh-toggle" class="btn btn-secondary">Auto Refresh: ON</button>
+                <div class="header-actions">
+                    <button id="btn-recalculate" class="btn btn-primary">
+                        <span>🔄</span> Run Live Forecast
+                    </button>
                 </div>
             </header>
 
             <div class="content-body">
-                <div id="table-container" class="table-container">
-                    <div class="empty-state">
-                        <div class="icon">🔍</div>
-                        <h3>No Table Selected</h3>
-                        <p>Choose a table from the sidebar to inspect its raw values and calculated metrics.</p>
+
+                <!-- TAB 1: EXECUTIVE DASHBOARD -->
+                <section id="tab-dashboard" class="tab-pane active">
+                    <!-- KPI Metric Cards -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card highlight-card">
+                            <span class="kpi-label">TOTAL PROJECTED REVENUE</span>
+                            <div class="kpi-value" id="kpi-total">$0.00</div>
+                            <span class="kpi-subtext">Pipeline + Committed Backlog</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-label">WEIGHTED PIPELINE</span>
+                            <div class="kpi-value text-amber" id="kpi-pipeline">$0.00</div>
+                            <span class="kpi-subtext" id="kpi-quotes-count">0 Open Quotes</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-label">COMMITTED BACKLOG</span>
+                            <div class="kpi-value text-emerald" id="kpi-backlog">$0.00</div>
+                            <span class="kpi-subtext" id="kpi-orders-count">0 Open Sales Orders</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-label">WEIGHTED WIN RATE</span>
+                            <div class="kpi-value text-indigo" id="kpi-winrate">0%</div>
+                            <span class="kpi-subtext">Logistic Regression Scored</span>
+                        </div>
                     </div>
-                </div>
+
+                    <!-- Forecast Monthly Stacked Chart & Risk Cards -->
+                    <div class="grid-2col">
+                        <div class="card chart-card">
+                            <div class="card-header">
+                                <h3>Monthly Revenue Forecast (Stacked)</h3>
+                                <div class="toggle-group">
+                                    <label><input type="checkbox" id="chk-p10p90" checked> Show P10/P90 Bands</label>
+                                </div>
+                            </div>
+                            <div class="chart-container" id="forecast-chart-container">
+                                <!-- CSS / Canvas Chart Rendered via JS -->
+                                <div class="chart-bars" id="chart-bars"></div>
+                            </div>
+                            <div class="chart-legend">
+                                <span><i class="legend-color bg-emerald"></i> Committed Backlog</span>
+                                <span><i class="legend-color bg-amber"></i> Weighted Pipeline</span>
+                                <span><i class="legend-color bg-indigo-line"></i> P90 Upper Bound</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Queues / Risk Views -->
+                        <div class="card risk-card">
+                            <div class="card-header">
+                                <h3>Pipeline Health & Action Queues</h3>
+                            </div>
+                            <div class="queue-section">
+                                <h4>⚠️ Overdue Quote Follow-Ups (<span id="cnt-overdue">0</span>)</h4>
+                                <ul class="queue-list" id="list-overdue">
+                                    <li class="empty-item">No overdue follow-up quotes.</li>
+                                </ul>
+                            </div>
+                            <div class="queue-section">
+                                <h4>📦 Backlog PO-Matching Risks (<span id="cnt-unmatched">0</span>)</h4>
+                                <ul class="queue-list" id="list-unmatched">
+                                    <li class="empty-item">All sales orders matched to POs.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Breakdown Table -->
+                    <div class="card margin-top">
+                        <div class="card-header">
+                            <h3>Monthly Forecast Breakdown Table</h3>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Forecast Month</th>
+                                    <th>Pipeline ($)</th>
+                                    <th>Committed Backlog ($)</th>
+                                    <th>Total Forecast ($)</th>
+                                    <th>P10 Lower ($)</th>
+                                    <th>P90 Upper ($)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbl-monthly-body">
+                                <tr><td colspan="6" class="text-center">Loading forecast metrics...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- TAB 2: WHAT-IF SENSITIVITY ENGINE -->
+                <section id="tab-whatif" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3>What-If Coefficient Sensitivity Engine</h3>
+                                <p class="subtitle">Turn individual probability coefficients ON or OFF to analyze factor influence on final revenue projections.</p>
+                            </div>
+                        </div>
+
+                        <div class="toggles-grid" id="whatif-toggles-grid">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <div class="card margin-top">
+                        <div class="card-header">
+                            <h3>Recalculated What-If Forecast Comparison</h3>
+                        </div>
+                        <div class="chart-container" id="whatif-chart-container">
+                            <div class="chart-bars" id="whatif-chart-bars"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 3: QUOTE & BACKLOG CRUD WORKBENCH -->
+                <section id="tab-workbench" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="toolbar">
+                                <div class="btn-group">
+                                    <button class="btn btn-secondary active" id="btn-view-quotes">Open Quotes</button>
+                                    <button class="btn btn-secondary" id="btn-view-backlog">Sales Order Backlog</button>
+                                </div>
+                                <input type="text" id="search-workbench" class="input-search" placeholder="Search customer, ref no, manager...">
+                            </div>
+                            <button id="btn-add-record" class="btn btn-primary">+ Add New Quote</button>
+                        </div>
+
+                        <div class="table-scroll">
+                            <table class="data-table" id="tbl-crud">
+                                <thead id="tbl-crud-head"></thead>
+                                <tbody id="tbl-crud-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 4: CUSTOMER & SUPPLIER DIRECTORIES -->
+                <section id="tab-directories" class="tab-pane">
+                    <div class="grid-2col">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Customer Directory (`customer.csv`)</h3>
+                            </div>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Customer Name</th>
+                                        <th>Payment Term</th>
+                                        <th>Sales Employee</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-cust-body"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Supplier Directory (`supplier.csv`)</h3>
+                            </div>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Supplier Code</th>
+                                        <th>Supplier Name</th>
+                                        <th>Lead Time Offset</th>
+                                        <th>Win Modifier</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-sup-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 5: IMPORT & HEADER MAPPING -->
+                <section id="tab-ingest" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3>Data Ingestion & Dynamic Column Header Mapper</h3>
+                                <p class="subtitle">Upload `.csv`, `.xlsx`, or `.xls` files to ingest into SQLite database with flexible column mapping.</p>
+                            </div>
+                        </div>
+
+                        <div class="upload-zone" id="drop-zone">
+                            <div class="upload-icon">📁</div>
+                            <h4>Drag & Drop file here, or <label for="file-input" class="link-btn">browse file</label></h4>
+                            <p>Supports `KS Quotations.csv`, `customer.csv`, `supplier.csv`, and `F6 - Order Book by Item.csv`</p>
+                            <input type="file" id="file-input" accept=".csv, .xlsx, .xls" hidden>
+                        </div>
+
+                        <!-- Step 2: Mapping Form (Hidden initially) -->
+                        <div id="mapping-modal" class="mapping-container hidden">
+                            <div class="card-header">
+                                <h4>Step 2: Map Raw Columns to System Fields</h4>
+                                <select id="sel-entity-type" class="select-field">
+                                    <option value="quotes">Quotations Register</option>
+                                    <option value="customers">Customer Directory</option>
+                                    <option value="suppliers">Supplier Directory</option>
+                                    <option value="backlog">Order Book Backlog</option>
+                                </select>
+                            </div>
+
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Target System Field</th>
+                                        <th>Mapped Column in Uploaded File</th>
+                                        <th>Sample Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-mapping-body"></tbody>
+                            </table>
+
+                            <div class="card-footer">
+                                <button id="btn-confirm-ingest" class="btn btn-success">Confirm & Ingest into SQLite</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 6: MODEL SETTINGS & FALLBACKS -->
+                <section id="tab-settings" class="tab-pane">
+                    <div class="grid-2col">
+                        <div class="card">
+                            <div class="card-header">
+                                <div>
+                                    <h3>Logistic Regression & Model Fitting</h3>
+                                    <p class="subtitle">Fit parameters on historical Won vs Lost quotes or reset to default fallbacks.</p>
+                                </div>
+                                <button id="btn-fit-model" class="btn btn-warning">⚡ Refit Model on Historical Data</button>
+                            </div>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Coefficient Key</th>
+                                        <th>Category</th>
+                                        <th>Weight / Value</th>
+                                        <th>Enabled</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-coef-body"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Quote Band Quintile Thresholds</h3>
+                            </div>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Band Name</th>
+                                        <th>Min Value ($)</th>
+                                        <th>Max Value ($)</th>
+                                        <th>Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-quintile-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 7: LIVE DB INSPECTOR -->
+                <section id="tab-inspector" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 id="active-table-title">Database Tables</h3>
+                                <p id="table-subtitle" class="subtitle">Click any table to inspect raw SQLite contents.</p>
+                            </div>
+                            <div id="inspector-table-list" class="btn-group"></div>
+                        </div>
+                        <div class="table-scroll">
+                            <table class="data-table" id="tbl-inspector">
+                                <thead id="tbl-inspector-head"></thead>
+                                <tbody id="tbl-inspector-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
             </div>
         </main>
+    </div>
+
+    <!-- Generic Modal Dialog for CRUD Add/Edit -->
+    <div id="modal-crud" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="modal-crud-title">Add New Record</h3>
+                <button id="modal-crud-close" class="close-btn">&times;</button>
+            </div>
+            <form id="form-crud" class="modal-body">
+                <div id="form-crud-fields" class="form-grid"></div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save Record</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="script.js"></script>

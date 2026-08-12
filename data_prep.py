@@ -50,7 +50,6 @@ def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
     # INTERN TODO: Implement column cleaning logic below
     # Hint: df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
     df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
-    
     return df
 
 
@@ -75,11 +74,10 @@ def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
     # Hint 2: df['customer_tier'] = df['customer_tier'].fillna('Tier 3')
     if 'quote_value' in df.columns:
         df = df.dropna(subset=['quote_value'])
-    if 'close_date' in df.columns:
-        df = df.dropna(subset=['close_date'])
+    if 'closed_date' in df.columns:
+        df = df.dropna(subset=['closed_date'])
     if 'customer_tier' in df.columns:
         df['customer_tier'] = df['customer_tier'].fillna('Tier 3')
-
     return df
 
 
